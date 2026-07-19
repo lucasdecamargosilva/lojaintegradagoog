@@ -1003,7 +1003,11 @@
         openBtn.innerHTML = stampImageHTML;
 
 
-        const imgContainers = ['.js-product-slide', '.product-image-column', '.js-swiper-product', '[data-store^="product-image-"]', '.product__media-wrapper', '.product-gallery__media', '.product__media', '.product-image-main', '.product-media-container', '[data-media-id]', '.product__media-item', '.product-gallery', '.product-single__media', '.media-gallery'];
+        // Loja Integrada primeiro: a galeria e um carrossel Splide dentro de .produtos-img.
+        // (os seletores Nuvemshop/Shopify abaixo sobraram do port e nao existem aqui —
+        // sem os de LI o botao caia no fallback fixo no canto da tela)
+        const imgContainers = ['.produtos-img', '.splide__track', '.splide',
+            '.js-product-slide', '.product-image-column', '.js-swiper-product', '[data-store^="product-image-"]', '.product__media-wrapper', '.product-gallery__media', '.product__media', '.product-image-main', '.product-media-container', '[data-media-id]', '.product__media-item', '.product-gallery', '.product-single__media', '.media-gallery'];
 
         function tryPlaceTriggerBtn() {
             // 1ª prioridade: container que tenha <img> dentro (evita cair em slide de vídeo)
