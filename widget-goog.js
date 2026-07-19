@@ -279,12 +279,17 @@
             color: var(--c-muted); margin-bottom: 8px;
         }
         .q-phone-wrap { margin-bottom: 28px; }
+        /* O tema da Loja Integrada usa Bootstrap 2, que estampa
+           input { height:20px; padding:4px 6px; font-size:14px } e achatava o campo.
+           Por isso o !important nas medidas — mesma solucao usada na Emaus (tambem LI). */
         .q-input {
-            display: block; width: 100%; height: 52px;
-            padding: 0 16px; margin: 0;
+            display: block !important; width: 100% !important;
+            height: 52px !important; min-height: 52px !important;
+            padding: 0 16px !important; margin: 0 !important;
+            line-height: normal !important; box-sizing: border-box !important;
             background: var(--c-surface); border: 1.5px solid transparent;
-            border: 1.5px solid var(--c-line); border-radius: 14px;
-            font-size: 16px; font-family: var(--font-body); font-weight: 400;
+            border: 1.5px solid var(--c-line) !important; border-radius: 14px !important;
+            font-size: 16px !important; font-family: var(--font-body); font-weight: 400;
             color: var(--c-ink); outline: none;
             -webkit-appearance: none; appearance: none; transition: border-color 0.2s;
         }
