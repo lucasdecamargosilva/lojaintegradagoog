@@ -1213,6 +1213,19 @@
             return uniqueImgs.slice(0, 4);
         }
 
+        // Foto da variante ESCOLHIDA agora. Na Loja Integrada, trocar de cor nao
+        // muda o og:image nem re-renderiza a pagina: o carrossel Splide so marca
+        // o slide da cor como .is-active. Por isso lemos o slide ativo na hora da
+        // prova, senao a geracao usa sempre a foto da 1a cor.
+        function fotoDaVarianteAtual() {
+            var s = document.querySelector('.splide__slide.is-active img, .splide__slide.active img');
+            if (s) {
+                var u = s.getAttribute('data-largeimg') || s.getAttribute('data-mediumimg') || s.currentSrc || s.src;
+                if (u && !/data:image/.test(u)) return u;
+            }
+            return '';
+        }
+
         function populateImageSelector() {
             const imgs = extractImages();
             const group = document.getElementById('q-photo-selector-group');
@@ -1727,7 +1740,7 @@
                     return;
                 }
 
-                const prodImg = selectedProductImgUrl || (document.querySelector('meta[property="og:image"]')?.content || '');
+                const prodImg = fotoDaVarianteAtual() || selectedProductImgUrl || (document.querySelector('meta[property="og:image"]')?.content || '');
                 const prodName = document.querySelector('h1.nome-produto,h1.titulo,.produto-nome h1,h1')?.innerText || document.title;
 
                 uploadStep.style.display = 'none';
