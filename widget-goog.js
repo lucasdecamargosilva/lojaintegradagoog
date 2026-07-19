@@ -842,11 +842,11 @@
         // que a cliente ve quebra a confianca e briga com a parcela.
         // Cuidado: o tema da LI deixa placeholders nao renderizados na pagina
         // ("R$ --PRODUTO_PRECO_POR--"), entao so aceitamos texto com digito.
-        // alguns desses seletores sao wrappers (trazem preco + parcela + pix juntos),
-        // entao pegamos so o PRIMEIRO valor, que e o preco cheio exibido.
-        var els = document.querySelectorAll('.preco-promocional, .preco-venda, .destaque-preco');
-        for (var i = 0; i < els.length; i++) {
-            var t = (els[i].textContent || '').trim().replace(/\s+/g, ' ');
+        // so o preco VISIVEL do bloco do produto; alguns seletores sao wrappers
+        // (trazem preco + parcela + pix juntos), entao pegamos o primeiro valor.
+        var el = primeiroVisivel('.preco-promocional, .preco-venda, .destaque-preco');
+        if (el) {
+            var t = (el.textContent || '').trim().replace(/\s+/g, ' ');
             var achou = t.match(/R\$\s?\d[\d.,]*/);
             if (achou) return achou[0];
         }
@@ -860,7 +860,13 @@
     }
 
     function findStoreBuyBtn() {
-        return document.querySelector('.botao-comprar-ajax, .botao-comprar, .comprar button, button[type="submit"].js-addtocart');
+        // A LI renderiza ate 6 botoes de compra (mobile, desktop, resumo flutuante) e
+        // esconde os que nao valem em .acoes-produto.hide. O querySelector pegava o
+        // PRIMEIRO, que e invisivel — clicar nele nao fazia nada.
+        // '.comprar button' fica de fora de proposito: casava com o nosso proprio
+        // botao "Provador Virtual", que e inserido ali ao lado.
+        var sel = '.botao-comprar-ajax, .botao-comprar, button[type="submit"].js-addtocart';
+        return primeiroVisivel(sel) || primeiroVisivel(sel, document);
     }
 
     // Compra (Loja Integrada): clica o botão nativo de compra do tema (add-to-cart AJAX correto).
@@ -916,28 +922,36 @@
 
     // Parcelamento — o MESMO da pagina: pega a MAIOR parcela do produto ("em ate Nx de R$ X").
     // Le do data-variants (mesma fonte do preco). installments_data vem como STRING JSON aninhada.
+    // A pagina de produto da LI e cheia de armadilha:
+    //  - repete o mesmo bloco varias vezes (mobile / desktop / resumo flutuante) e
+    //    esconde as copias que nao valem;
+    //  - lista produtos RELACIONADOS mais abaixo, com preco e parcela proprios;
+    //  - deixa placeholders do tema nao renderizados ("R$ --PRODUTO_PRECO_POR--").
+    // Por isso: sempre dentro do bloco do produto, e sempre o elemento VISIVEL.
+    function escopoProduto() {
+        return document.querySelector('.produto-detalhes') || document;
+    }
+
+    function primeiroVisivel(sel, raiz) {
+        var els = (raiz || escopoProduto()).querySelectorAll(sel);
+        for (var i = 0; i < els.length; i++) {
+            var r = els[i].getBoundingClientRect();
+            if (r.width > 0 && r.height > 0 && els[i].offsetParent !== null) return els[i];
+        }
+        return null;
+    }
+
     function getInstallment() {
-        var dv = document.querySelector('[data-variants]');
-        if (!dv) return '';
-        try {
-            var v = JSON.parse(dv.getAttribute('data-variants'))[0];
-            var idata = v.installments_data;
-            if (!idata) return '';
-            if (typeof idata === 'string') idata = JSON.parse(idata);
-            var plans = idata[Object.keys(idata)[0]];
-            if (!plans) return '';
-            var best = null;
-            Object.keys(plans).forEach(function (k) {
-                var n = parseInt(k, 10);
-                var p = plans[k];
-                if (n >= 2 && p.installment_value > 0) {
-                    var free = p.without_interests === true;
-                    if (!best || (free && !best.free) || (free === best.free && n > best.n)) best = { n: n, val: p.installment_value, free: free };
-                }
-            });
-            if (best) return best.n + 'x de R$ ' + Number(best.val).toFixed(2).replace('.', ',');
-        } catch (e) {}
-        return '';
+        // Loja Integrada nao tem o [data-variants] da Nuvemshop: a parcela esta no texto
+        // do tema, ex. "ate 3x de R$ 60,00 sem juros".
+        var el = primeiroVisivel('.preco-parcela');
+        if (!el) return '';
+        var t = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+        var m = t.match(/(\d+)\s*x\s*de\s*(R\$\s?[\d.,]+)/i);
+        if (!m) return '';
+        var out = m[1] + 'x de ' + m[2].replace(/R\$\s*/, 'R$ ');
+        if (/sem juros/i.test(t)) out += ' sem juros';
+        return out;
     }
 
     function populateBuyCta() {
