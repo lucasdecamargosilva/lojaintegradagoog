@@ -11,6 +11,8 @@
         var local = nums.length === 11 ? nums.slice(3) : nums.slice(2);
         if (/^(\d)\1+$/.test(local)) { setErr('N\u00famero n\u00e3o parece real — confira'); return false; }
         if (/(\d)\1{5,}/.test(local)) { setErr('N\u00famero n\u00e3o parece real — confira'); return false; }
+        // so 1-2 digitos distintos = fake (99996666, 54545454, 56565656)
+        if (new Set(local).size <= 2) { setErr('N\u00famero n\u00e3o parece real — confira'); return false; }
         if (/^(?:01234567|12345678|23456789|34567890|98765432|87654321|76543210|0123456789|1234567890)/.test(local)) { setErr('N\u00famero n\u00e3o parece real — confira'); return false; }
         return true;
     }
@@ -830,17 +832,24 @@
     var Q_CHECKOUT_URL = '/carrinho';
 
     function getMainPrice() {
-        // Loja Integrada: preço ESTRUTURADO (meta itemprop) — confiável p/ trava de parcela
+        // O preco EXIBIDO manda: o meta itemprop da LI traz o valor a vista/PIX
+        // (ex: 85,40) enquanto a pagina mostra o de tabela (89,90). Divergir do
+        // que a cliente ve quebra a confianca e briga com a parcela.
+        // Cuidado: o tema da LI deixa placeholders nao renderizados na pagina
+        // ("R$ --PRODUTO_PRECO_POR--"), entao so aceitamos texto com digito.
+        // alguns desses seletores sao wrappers (trazem preco + parcela + pix juntos),
+        // entao pegamos so o PRIMEIRO valor, que e o preco cheio exibido.
+        var els = document.querySelectorAll('.preco-promocional, .preco-venda, .destaque-preco');
+        for (var i = 0; i < els.length; i++) {
+            var t = (els[i].textContent || '').trim().replace(/\s+/g, ' ');
+            var achou = t.match(/R\$\s?\d[\d.,]*/);
+            if (achou) return achou[0];
+        }
+        // fallback: preco estruturado
         var m = document.querySelector('meta[itemprop="price"]');
         if (m && m.content && /\d/.test(m.content)) {
             var v = parseFloat(m.content);
             if (!isNaN(v)) return 'R$ ' + v.toFixed(2).replace('.', ',');
-        }
-        // fallback: preço exibido no tema LI
-        var el = document.querySelector('.preco-promocional, .preco-venda, .destaque-preco');
-        if (el) {
-            var t = (el.textContent || '').trim();
-            if (t && /\d/.test(t)) return t.replace(/\s+/g, ' ');
         }
         return '';
     }
